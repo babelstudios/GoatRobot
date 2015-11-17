@@ -1,0 +1,19 @@
+{
+    "name": "mechanic-goat",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+	"test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+	"express": "^4.13.3",
+	"body-parser": "^1.14.1",
+	"bleno": "^0.3.2",
+	"servoblaster": "^0.1.1",
+	"i2c": "https://github.com/polaris/node-i2c",
+	"onoff": "^1.0.3"
+    }
+}
