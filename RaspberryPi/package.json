@@ -14,6 +14,7 @@
 	"bleno": "^0.3.2",
 	"servoblaster": "^0.1.1",
 	"i2c": "https://github.com/polaris/node-i2c",
-	"onoff": "^1.0.3"
+	"onoff": "^1.0.3",
+	"pi-spi": "^1.0.1"
     }
 }

@@ -4,7 +4,6 @@ var robot = require('./robot');
 var RobotService = require('./robot-service');
 
 var name = "GoatRobot";
-var robotService = new RobotService(new robot.Robot());
 
 bleno.on('stateChange', function(state) {
     if (state === 'poweredOn') {
@@ -27,3 +26,15 @@ bleno.on('advertisingStart', function(err) {
 	]);
     }
 });
+
+
+var robotMonitor = require('./robot-monitor')
+var monitor = new robotMonitor.RobotMonitor([1, 2, 3, 4])
+
+monitor.on('temp', function(temp) {
+    console.log(temp + " C emited")
+})
+
+monitor.on('volt', function(channel, volts) {
+    console.log(volts + " volts on channel " + channel);
+})
