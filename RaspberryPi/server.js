@@ -4,6 +4,7 @@ var robot = require('./robot');
 var RobotService = require('./robot-service');
 
 var name = "GoatRobot";
+var robotService = new RobotService(new robot.Robot());
 
 bleno.on('stateChange', function(state) {
     if (state === 'poweredOn') {
