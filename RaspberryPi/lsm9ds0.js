@@ -20,7 +20,9 @@ function LSM9DS0() {
     this.gyro = new i2c(0x6b, {device: '/dev/i2c-1'});
     this.gyro.writeBytes(LSM9DS0.CTRL_REG1_G, [0x0F], function(err){});
     this.gyro.writeBytes(LSM9DS0.CTRL_REG4_G, [0x30], function(err){});
-    this.gyroBias = 0
+    this.gyroBias =  {x: 0, y: 0, z: 0}
+    
+    this.orientation = {x: 0, y: 0, z: 0}
 
     this.time = process.hrtime();
     self.calculateGyroBias(0, function() {
@@ -36,13 +38,16 @@ LSM9DS0.prototype.calculateGyroBias = function(counter, callback) {
 	var dt = process.hrtime(self.time)[1] / 1000000000.0;
 	self.time = process.hrtime()
 //	console.log("Calculating bias\nx: " + (data.x * dt) + ", bias: " + self.gyroBias + ", dt: " + dt);
-	var x = data.x * dt;
 	counter++;
 	if (counter > 5) {
-	    self.gyroBias += x
+	    self.gyroBias.x += data.x * dt
+	    self.gyroBias.y += data.y * dt
+	    self.gyroBias.z += data.z * dt
 	}
 	if (counter > 30) {
-	    self.gyroBias = self.gyroBias / (counter - 5)
+	    self.gyroBias.x = self.gyroBias.x / (counter - 5)
+	    self.gyroBias.y = self.gyroBias.y / (counter - 5)
+	    self.gyroBias.z = self.gyroBias.z / (counter - 5)
 	    callback()
 	    return
 	}
@@ -59,9 +64,10 @@ LSM9DS0.prototype.emitGyro = function() {
     this.readGyro(function(data) {
 	var dt = process.hrtime(self.time)[1] / 1000000000.0;
 	self.time = process.hrtime()
-//	console.log("x: " + (data.x * dt) + ", bias: " + self.gyroBias + ", corrected: " + (data.x * dt - self.gyroBias) + ", dt: " + dt);
-	var x = data.x * dt - self.gyroBias
-	self.emit("gyro", x)
+	//	console.log("x: " + (data.x * dt) + ", bias: " + self.gyroBias + ", corrected: " + (data.x * dt - self.gyroBias) + ", dt: " + dt);
+
+	var gyro = {x: data.x * dt - self.gyroBias.x, y: data.y * dt - self.gyroBias.y, z: data.z * dt - self.gyroBias.z}
+	self.emit("gyro", gyro)
 	setTimeout(function() {self.emitGyro()}, 100.0)
     })
 }
@@ -71,7 +77,7 @@ LSM9DS0.prototype.readGyro = function(callback) {
 	var x = data.readInt16LE(0) * 0.07;
 	var y = data.readInt16LE(2) * 0.07;
 	var z = data.readInt16LE(4) * 0.07;
-	callback({'x':x, 'y':y, 'z':z});
+	callback({x: x, y: y, z: z});
     });
 };
 
@@ -80,7 +86,7 @@ LSM9DS0.prototype.readAcc = function(callback) {
 	var x = data.readInt16LE(0);
 	var y = data.readInt16LE(2);
 	var z = data.readInt16LE(4);
-	callback({'x':x, 'y':y, 'z':z});
+	callback({x: x, y: y, z: z});
     });
 };
 
