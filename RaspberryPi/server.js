@@ -1,12 +1,14 @@
 var util = require('util')
 
 var LSM9DS0 = require('./lsm9ds0')
-var lsm9ds0 = new LSM9DS0.LSM9DS0();
-
+var lsm9ds0 = new LSM9DS0.LSM9DS0(100.0);
 console.log(lsm9ds0);
+lsm9ds0.start()
 
-lsm9ds0.on('gyro', function(x) {
-    console.log(x);
+var DCMFilter = require('./dcm-filter')
+var dcmFilter = new DCMFilter.DCMFilter(lsm9ds0)
+dcmFilter.on('data', function(data) {
+    console.log("roll: " + data.roll.toFixed(2) + ", pitch: " + data.pitch.toFixed(2) + ", yaw: " + data.yaw.toFixed(2))
 });
 
 
@@ -62,10 +64,10 @@ var robotMonitor = require('./robot-monitor')
 var monitor = new robotMonitor.RobotMonitor([1, 2])
 
 monitor.on('temp', function(temp) {
-    console.log(temp + " C emited")
+    console.log(temp.toFixed(1) + " C")
 })
 
 monitor.on('volt', function(channel, volts) {
-    console.log(volts + " volts on channel " + channel);
+    console.log(volts.toFixed(1) + " volts on channel " + channel);
 })
 

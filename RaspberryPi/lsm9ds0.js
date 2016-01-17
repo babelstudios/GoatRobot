@@ -1,10 +1,15 @@
 var i2c = require('i2c');
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
+var sylvester = require('sylvester'),
+    Matrix = sylvester.Matrix,
+    Vector = sylvester.Vector;
 
-function LSM9DS0() {
+function LSM9DS0(looptime) {
     var self = this
-    
+    this.looptime = looptime
+
+    // Accellerometer and mag wire
     this.xm = new i2c(0x1d, {device: '/dev/i2c-1'});
     // z,y,x axis enabled, continuos update,  100Hz data rate
     this.xm.writeBytes(LSM9DS0.CTRL_REG1_XM, [0x67], function(err){});
@@ -15,69 +20,102 @@ function LSM9DS0() {
     this.xm.writeBytes(LSM9DS0.CTRL_REG5_XM, [0xF0], function(err){});
     this.xm.writeBytes(LSM9DS0.CTRL_REG6_XM, [0x60], function(err){});
     this.xm.writeBytes(LSM9DS0.CTRL_REG7_XM, [0x00], function(err){});
-    
-    // initialize gyro
+    this.magCalibration = {xMax: 0, xMin: 0, yMax: 0, yMin: 0, zMax: 0, zMin: 0}
+
+    // Accellerometer wire
     this.gyro = new i2c(0x6b, {device: '/dev/i2c-1'});
+    // initialize gyro
     this.gyro.writeBytes(LSM9DS0.CTRL_REG1_G, [0x0F], function(err){});
     this.gyro.writeBytes(LSM9DS0.CTRL_REG4_G, [0x30], function(err){});
-    this.gyroBias =  {x: 0, y: 0, z: 0}
-    
-    this.orientation = {x: 0, y: 0, z: 0}
-
-    this.time = process.hrtime();
-    self.calculateGyroBias(0, function() {
-	self.emitGyro();
-    })
+    this.gyroBias = [0, 0, 0]
 }
 
 util.inherits(LSM9DS0, EventEmitter)
 
-LSM9DS0.prototype.calculateGyroBias = function(counter, callback) {
+LSM9DS0.prototype.start = function() {
     var self = this
-    this.readGyro(function(data) {
-	var dt = process.hrtime(self.time)[1] / 1000000000.0;
-	self.time = process.hrtime()
-//	console.log("Calculating bias\nx: " + (data.x * dt) + ", bias: " + self.gyroBias + ", dt: " + dt);
-	counter++;
-	if (counter > 5) {
-	    self.gyroBias.x += data.x * dt
-	    self.gyroBias.y += data.y * dt
-	    self.gyroBias.z += data.z * dt
-	}
-	if (counter > 30) {
-	    self.gyroBias.x = self.gyroBias.x / (counter - 5)
-	    self.gyroBias.y = self.gyroBias.y / (counter - 5)
-	    self.gyroBias.z = self.gyroBias.z / (counter - 5)
-	    callback()
-	    return
-	}
-	setTimeout(function() {self.calculateGyroBias(counter, callback)}, 100.0)	
+    self.calculateGyroBias(0, [0,0,0], function() {
+	self.time = process.hrtime();
+	self.emitData()
     })
 }
 
-LSM9DS0.prototype.emitGyro = function() {
-    var self = this;
-//    this.readMag(function(data) {
-//	console.log(data)
-//    })
-    
-    this.readGyro(function(data) {
-	var dt = process.hrtime(self.time)[1] / 1000000000.0;
-	self.time = process.hrtime()
-	//	console.log("x: " + (data.x * dt) + ", bias: " + self.gyroBias + ", corrected: " + (data.x * dt - self.gyroBias) + ", dt: " + dt);
+LSM9DS0.prototype.emitData = function() {
+    var self = this
+    self.readGyro(function(gyroData) {
+	self.readAcc(function(accData) {
+	    self.readMag(function(magData) {
+		var dt = process.hrtime(self.time)[1] / 1000000000.0;
+		self.time = process.hrtime()
+		gyroData = [gyroData[0] * dt, gyroData[1] * dt, gyroData[2] * dt]
+		self.emit('data', {gyro: gyroData, acc: accData, mag: magData, dt: dt})
+		setTimeout(function() {self.emitData()}, self.looptime)		
+	    })
+	})
+    })
+}
 
-	var gyro = {x: data.x * dt - self.gyroBias.x, y: data.y * dt - self.gyroBias.y, z: data.z * dt - self.gyroBias.z}
-	self.emit("gyro", gyro)
-	setTimeout(function() {self.emitGyro()}, 100.0)
+LSM9DS0.prototype.calculateGyroBias = function(counter, bias, callback) {
+    var self = this
+    this.readGyro(function(data) {
+	counter++;
+	if (counter > 5) {
+	    bias[0] += data[0]
+	    bias[1] += data[1]
+	    bias[2] += data[2]
+	}
+	if (counter > 20) {
+	    self.gyroBias[0] = bias[0] / (counter - 5)
+	    self.gyroBias[1] = bias[1] / (counter - 5)
+	    self.gyroBias[2] = bias[2] / (counter - 5)
+	    callback()
+	    return
+	}
+	setTimeout(function() {self.calculateGyroBias(counter, bias, callback)}, self.looptime)
+    })
+}
+
+LSM9DS0.prototype.calibrateMag = function(time, callback) {
+    var self = this
+    this.readMag(function(data) {
+	time -= 100.0
+	if (data[0] > self.magCalibration.xMax) {
+	    self.magCalibration.xMax = data[0]
+	}
+	if (data[0] < self.magCalibration.xMin) {
+	    self.magCalibration.xMin = data[0]
+	}
+	if (data[1] > self.magCalibration.yMax) {
+	    self.magCalibration.yMax = data[1]
+	}
+	if (data[1] < self.magCalibration.yMin) {
+	    self.magCalibration.yMin = data[1]
+	}
+	if (data[2] > self.magCalibration.zMax) {
+	    self.magCalibration.zMax = data[2]
+	}
+	if (data[2] < self.magCalibration.zMin) {
+	    self.magCalibration.zMin = data[2]
+	}
+	console.log(self.magCalibration)
+	console.log(time)
+
+	if(time < 0) {
+	    callback(self.magCalibration)
+	    return
+	}
+	
+	setTimeout(function() {self.calibrateMag(time, callback)}, 100.0)
     })
 }
 
 LSM9DS0.prototype.readGyro = function(callback) {
+    var self = this
     this.gyro.readBytes(0x80 | LSM9DS0.OUT_X_L_G, 6, function(error, data) {
-	var x = data.readInt16LE(0) * 0.07;
-	var y = data.readInt16LE(2) * 0.07;
-	var z = data.readInt16LE(4) * 0.07;
-	callback({x: x, y: y, z: z});
+	var x = (data.readInt16LE(0) * 0.07 * Math.PI / 180.0) - self.gyroBias[0];
+	var y = (data.readInt16LE(2) * 0.07 * Math.PI / 180.0) - self.gyroBias[1];
+	var z = (data.readInt16LE(4) * 0.07 * Math.PI / 180.0) - self.gyroBias[2];
+	callback([x, y, z]);
     });
 };
 
@@ -86,7 +124,7 @@ LSM9DS0.prototype.readAcc = function(callback) {
 	var x = data.readInt16LE(0);
 	var y = data.readInt16LE(2);
 	var z = data.readInt16LE(4);
-	callback({x: x, y: y, z: z});
+	callback([x, y, z]);
     });
 };
 
@@ -95,7 +133,7 @@ LSM9DS0.prototype.readMag = function(callback) {
 	var x = data.readInt16LE(0);
 	var y = data.readInt16LE(2);
 	var z = data.readInt16LE(4);
-	callback({'x':x, 'y':y, 'z':z});
+	callback([x, y, z]);
     });
 };
 
@@ -204,7 +242,5 @@ LSM9DS0.TIME_LATENCY = 0x3C;
 LSM9DS0.TIME_WINDOW = 0x3D;
 LSM9DS0.ACT_THS = 0x3E;
 LSM9DS0.ACT_DUR = 0x3F;
-
-
 
 module.exports.LSM9DS0 = LSM9DS0;
