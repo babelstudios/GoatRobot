@@ -28,13 +28,16 @@ DCMFilter.prototype.updateFilter = function(data, callback) {
     var wA = this.dcmEst.row(3).cross(kAcc)
 	    
     // Magnetometer
-    var iMag = Vector.create([Math.sqrt(1-this.dcmEst.e(1, 3)*this.dcmEst.e(1,3)), 0, this.dcmEst.e(1,3)])
-    var wM = this.dcmEst.row(1).cross(iMag)
+    var iMag = Vector.create([data.mag[0], data.mag[1], -data.mag[2]]).toUnitVector().multiply(1.0)
+    var iMagNorth = kAcc.cross(iMag).cross(kAcc).toUnitVector()
+    var wM = this.dcmEst.row(1).cross(iMagNorth)
+//    var iMag = Vector.create([Math.sqrt(1-this.dcmEst.e(1, 3)*this.dcmEst.e(1,3)), 0, this.dcmEst.e(1,3)])
+//    var wM = this.dcmEst.row(1).cross(iMag)
 
     // Gyro
-    var wG = Vector.create([data.gyro[1], data.gyro[0], data.gyro[2]]).multiply(-1.0)
-    var accWeight = 0.1
-    var magWeight = 0.0
+    var wG = Vector.create(data.gyro).multiply(-1.0)
+    var accWeight = 0.02
+    var magWeight = 0.02
 
     // Create rotation vector
     var w = wG.add(wA.multiply(accWeight)).add(wM.multiply(magWeight))
@@ -71,7 +74,7 @@ DCMFilter.prototype.toRollPitchYaw = function(dcm, callback) {
     var roll = Math.atan2(y, x)
     
     y = -this.dcmEst.e(3, 2)
-    var pitch = Math.atan2(y,x)
+    var pitch = Math.atan2(y, x)
     callback({roll: roll, pitch: pitch, yaw: yaw})
 }
 
