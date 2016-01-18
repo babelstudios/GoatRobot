@@ -4,10 +4,12 @@ var EventEmitter = require('events').EventEmitter;
 var sylvester = require('sylvester'),
     Matrix = sylvester.Matrix,
     Vector = sylvester.Vector;
+var Configuration = require('./configuration')
 
 function LSM9DS0(looptime) {
     var self = this
     this.looptime = looptime
+    this.configuration = new Configuration.Configuration('settings.json')
 
     // Accellerometer and mag wire
     this.xm = new i2c(0x1d, {device: '/dev/i2c-1'});
@@ -20,7 +22,11 @@ function LSM9DS0(looptime) {
     this.xm.writeBytes(LSM9DS0.CTRL_REG5_XM, [0xF0], function(err){});
     this.xm.writeBytes(LSM9DS0.CTRL_REG6_XM, [0x60], function(err){});
     this.xm.writeBytes(LSM9DS0.CTRL_REG7_XM, [0x00], function(err){});
-    this.magCalibration = {xMax: 0, xMin: 0, yMax: 0, yMin: 0, zMax: 0, zMin: 0}
+    this.magCalibration = this.configuration.read('magCalibration')
+    if (!this.magCalibration) {
+	this.magCalibration = {xMax: 0, xMin: 0, yMax: 0, yMin: 0, zMax: 0, zMin: 0}
+	this.configuration.save('magCalibration', this.magCalibration)
+    }
 
     // Accellerometer wire
     this.gyro = new i2c(0x6b, {device: '/dev/i2c-1'});
@@ -76,36 +82,44 @@ LSM9DS0.prototype.calculateGyroBias = function(counter, bias, callback) {
 }
 
 LSM9DS0.prototype.calibrateMag = function(time, callback) {
+    var calibration = this.configuration.read('magCalibration')
+    this.magCalibration = {xMax: 0, xMin: 0, yMax: 0, yMin: 0, zMax: 0, zMin: 0}
+    this.calibrateMagLoop(time, calibration, callback)
+}
+
+LSM9DS0.prototype.calibrateMagLoop = function(time, calibration, callback) {
     var self = this
     this.readMag(function(data) {
 	time -= 100.0
-	if (data[0] > self.magCalibration.xMax) {
-	    self.magCalibration.xMax = data[0]
+	if (data[0] > calibration.xMax) {
+	    calibration.xMax = data[0]
 	}
-	if (data[0] < self.magCalibration.xMin) {
-	    self.magCalibration.xMin = data[0]
+	if (data[0] < calibration.xMin) {
+	    calibration.xMin = data[0]
 	}
-	if (data[1] > self.magCalibration.yMax) {
-	    self.magCalibration.yMax = data[1]
+	if (data[1] > calibration.yMax) {
+	    calibration.yMax = data[1]
 	}
-	if (data[1] < self.magCalibration.yMin) {
-	    self.magCalibration.yMin = data[1]
+	if (data[1] < calibration.yMin) {
+	    calibration.yMin = data[1]
 	}
-	if (data[2] > self.magCalibration.zMax) {
-	    self.magCalibration.zMax = data[2]
+	if (data[2] > calibration.zMax) {
+	    calibration.zMax = data[2]
 	}
-	if (data[2] < self.magCalibration.zMin) {
-	    self.magCalibration.zMin = data[2]
+	if (data[2] < calibration.zMin) {
+	    calibration.zMin = data[2]
 	}
-	console.log(self.magCalibration)
-	console.log(time)
+	console.log(calibration)
+	console.log(time/1000)
 
-	if(time < 0) {
-	    callback(self.magCalibration)
+	if(time <= 0) {
+	    self.magCalibration = calibration
+	    self.configuration.save('magCalibration', calibration)
+	    callback()
 	    return
 	}
 	
-	setTimeout(function() {self.calibrateMag(time, callback)}, 100.0)
+	setTimeout(function() {self.calibrateMagLoop(time, calibration, callback)}, 100.0)
     })
 }
 
@@ -129,10 +143,12 @@ LSM9DS0.prototype.readAcc = function(callback) {
 };
 
 LSM9DS0.prototype.readMag = function(callback) {
+    var self = this
     this.xm.readBytes(0x80 | LSM9DS0.OUT_X_L_M, 6, function(error, data) {
-	var x = data.readInt16LE(0);
-	var y = data.readInt16LE(2);
-	var z = data.readInt16LE(4);
+	var cal = self.magCalibration
+	var x = data.readInt16LE(0) - (cal.xMin + cal.xMax) / 2 - cal.xMin / (cal.xMax - cal.xMin) * 2 - 1
+	var y = data.readInt16LE(2) - (cal.yMin + cal.yMax) / 2 - cal.yMin / (cal.yMax - cal.yMin) * 2 - 1
+	var z = data.readInt16LE(4) - (cal.zMin + cal.zMax) / 2 - cal.zMin / (cal.zMax - cal.zMin) * 2 - 1
 	callback([x, y, z]);
     });
 };
