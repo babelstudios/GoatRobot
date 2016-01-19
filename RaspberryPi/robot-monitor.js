@@ -16,15 +16,15 @@ util.inherits(RobotMonitor, EventEmitter)
 
 RobotMonitor.prototype.emitTemperature = function() {
     var self = this
-    var buffer = Buffer([1, 8+0<<4, 0]);
+    var buffer = Buffer([1, 8+7<<4, 0]);
     spi.transfer(buffer, buffer.length, function(error, data) {
 	if (error) { console.log(error); }
 	else {
 	    var value = ((data[1]&3) << 8) + data[2]
 	    var temp = ((value * 330)/1023.0)-50
-	    self.emit("temp", temp)
+	    self.emit("temperature", temp)
 	}
-	setTimeout(function() {self.emitTemperature()}, 2000)
+	setTimeout(function() {self.emitTemperature()}, 5000)
     });
 }
 
@@ -38,7 +38,7 @@ RobotMonitor.prototype.emitVoltage = function(channel) {
 	    var volts = (value * 3.3) / 1023.0
 	    self.emit("volt", channel, volts)
 	}
-	setTimeout(function() {self.emitVoltage(channel)}, 2000)
+	setTimeout(function() {self.emitVoltage(channel)}, 5000)
     });
 };
 

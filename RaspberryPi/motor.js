@@ -7,7 +7,7 @@ function Motor() {
 
 Motor.prototype.throttle = function(throttle) {
 //    this.throttle = throttle;
-    console.log('set throttle to ', throttle);
+//    console.log('set throttle to ', throttle);
 };
 
 module.exports.Motor = Motor;
