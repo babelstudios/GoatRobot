@@ -16,13 +16,19 @@ enum Motor {
 
 class GoatService: NSObject, CBPeripheralDelegate {
     
+    typealias TemperatureMonitorHandler = ((temperature: Float) -> Void)
+    var temperatureMonitorHandler: TemperatureMonitorHandler?
+    
     let peripheral: CBPeripheral
 
     static let uuid = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6810")
     let leftMotorUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6811")
     let rightMotorUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6812")
+    let temperatureUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6813")
+    
     var leftMotor: CBCharacteristic?
     var rightMotor: CBCharacteristic?
+    var temperature: CBCharacteristic?
     
     var leftMotorTS = NSDate().timeIntervalSince1970
     var rightMotorTS = NSDate().timeIntervalSince1970
@@ -36,7 +42,7 @@ class GoatService: NSObject, CBPeripheralDelegate {
     
     func peripheral(peripheral: CBPeripheral, didDiscoverServices error: NSError?) {
         for service in peripheral.services! {
-            peripheral.discoverCharacteristics([leftMotorUUID, rightMotorUUID], forService: service)
+            peripheral.discoverCharacteristics([leftMotorUUID, rightMotorUUID, temperatureUUID], forService: service)
         }
     }
     
@@ -69,7 +75,23 @@ class GoatService: NSObject, CBPeripheralDelegate {
                 leftMotor = characteristic
             } else if characteristic.UUID == rightMotorUUID {
                 rightMotor = characteristic
+            } else if characteristic.UUID == temperatureUUID {
+                temperature = characteristic
+                peripheral.setNotifyValue(true, forCharacteristic: temperature!)
             }
         }
+    }
+    
+    func peripheral(peripheral: CBPeripheral, didUpdateValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
+        guard let data = characteristic.value else {
+            return
+        }
+        guard let handler = temperatureMonitorHandler else {
+            return
+        }
+        
+        var temp:Float32 = 0
+        data.getBytes(&temp, length: sizeof(Float32))
+        handler(temperature: temp)
     }
 }

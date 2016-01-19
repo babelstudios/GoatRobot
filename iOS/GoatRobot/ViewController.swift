@@ -17,7 +17,7 @@ class ViewController: UIViewController {
     var switcher = true
     
     var goatService: GoatService!
-    @IBOutlet weak var testButton: UIButton!
+    @IBOutlet weak var temperatureLabel: UILabel!
     @IBOutlet weak var leftThrottleView: UIView!
     @IBOutlet weak var rightThrottleView: UIView!
     @IBOutlet weak var leftThrottleVerticalConstraint: NSLayoutConstraint!
@@ -34,6 +34,9 @@ class ViewController: UIViewController {
             switch result {
             case .Success(let service):
                 self.goatService = service
+                self.goatService.temperatureMonitorHandler = { temperature in
+                    self.temperatureLabel.text = String.localizedStringWithFormat("%.1f %@", temperature, "°C")
+                }
             case .Failure(let error):
                 self.goatService = nil
                 print(error)
