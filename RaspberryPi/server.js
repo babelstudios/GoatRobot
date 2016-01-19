@@ -2,8 +2,15 @@ var util = require('util')
 
 var LSM9DS0 = require('./lsm9ds0')
 var lsm9ds0 = new LSM9DS0.LSM9DS0(100.0);
-console.log(lsm9ds0);
-lsm9ds0.start()
+/*
+lsm9ds0.calibrateMag(20*1000, function() {
+    console.log('Calibration done.')
+    lsm9ds0.start()
+    lsm9ds0.on('data', function(data) {
+	console.log(data.mag)
+    })
+})
+*/
 
 var DCMFilter = require('./dcm-filter')
 var dcmFilter = new DCMFilter.DCMFilter(lsm9ds0)
