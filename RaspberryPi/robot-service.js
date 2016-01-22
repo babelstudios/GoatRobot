@@ -3,6 +3,7 @@ var bleno = require('bleno');
 
 var RobotMotorCharacteristic = require('./robot-motor-characteristic');
 var RobotTemperatureCharacteristic = require('./robot-temperature-characteristic');
+var RobotVoltageCharacteristic = require('./robot-voltage-characteristic');
 
 function RobotService(robot) {
     bleno.PrimaryService.call(this, {
@@ -10,7 +11,8 @@ function RobotService(robot) {
 	characteristics: [
 	    new RobotMotorCharacteristic(robot, 1),
 	    new RobotMotorCharacteristic(robot, 2),
-	    new RobotTemperatureCharacteristic(robot)
+	    new RobotTemperatureCharacteristic(robot),
+	    new RobotVoltageCharacteristic(robot)
 	]
     });
 }

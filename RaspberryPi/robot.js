@@ -13,8 +13,8 @@ function Robot() {
     this.monitor.on('temperature', function(temp) {
 	self.emit('temperature', temp)
     })
-    this.monitor.on('volt', function(channel, volts) {
-	self.emit('volt', channel, volts)
+    this.monitor.on('voltage', function(volts) {
+	self.emit('voltage', volts)
     })
 }
 
