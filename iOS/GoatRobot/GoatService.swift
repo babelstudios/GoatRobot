@@ -14,10 +14,18 @@ enum Motor {
     case Right
 }
 
+struct LipoVoltage {
+    let lipo:Int
+    let voltage:Float
+}
+
 class GoatService: NSObject, CBPeripheralDelegate {
     
     typealias TemperatureMonitorHandler = ((temperature: Float) -> Void)
     var temperatureMonitorHandler: TemperatureMonitorHandler?
+
+    typealias LipoVoltageMonitorHandler = ((voltages: [LipoVoltage]) -> Void)
+    var lipoVoltageMonitorHandler: LipoVoltageMonitorHandler?
     
     let peripheral: CBPeripheral
 
@@ -25,10 +33,12 @@ class GoatService: NSObject, CBPeripheralDelegate {
     let leftMotorUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6811")
     let rightMotorUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6812")
     let temperatureUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6813")
+    let lipoVoltageUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6814")
     
     var leftMotor: CBCharacteristic?
     var rightMotor: CBCharacteristic?
     var temperature: CBCharacteristic?
+    var lipoVoltage: CBCharacteristic?
     
     var leftMotorTS = NSDate().timeIntervalSince1970
     var rightMotorTS = NSDate().timeIntervalSince1970
@@ -42,7 +52,7 @@ class GoatService: NSObject, CBPeripheralDelegate {
     
     func peripheral(peripheral: CBPeripheral, didDiscoverServices error: NSError?) {
         for service in peripheral.services! {
-            peripheral.discoverCharacteristics([leftMotorUUID, rightMotorUUID, temperatureUUID], forService: service)
+            peripheral.discoverCharacteristics([leftMotorUUID, rightMotorUUID, temperatureUUID, lipoVoltageUUID], forService: service)
         }
     }
     
@@ -78,20 +88,38 @@ class GoatService: NSObject, CBPeripheralDelegate {
             } else if characteristic.UUID == temperatureUUID {
                 temperature = characteristic
                 peripheral.setNotifyValue(true, forCharacteristic: temperature!)
+            } else if characteristic.UUID == lipoVoltageUUID {
+                lipoVoltage = characteristic
+                peripheral.setNotifyValue(true, forCharacteristic: lipoVoltage!)
             }
         }
     }
     
     func peripheral(peripheral: CBPeripheral, didUpdateValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
-        guard let data = characteristic.value else {
-            return
-        }
-        guard let handler = temperatureMonitorHandler else {
-            return
-        }
         
-        var temp:Float32 = 0
-        data.getBytes(&temp, length: sizeof(Float32))
-        handler(temperature: temp)
+        guard let data = characteristic.value else { return }
+
+        if let temperature = temperature where temperature == characteristic {
+            guard let handler = temperatureMonitorHandler else { return }
+            var temp:Float32 = 0
+            data.getBytes(&temp, length: sizeof(Float32))
+            handler(temperature: temp)
+        } else if let lipoVoltage = lipoVoltage where lipoVoltage == characteristic {
+            guard let handler = lipoVoltageMonitorHandler else { return }
+            
+            let length = data.length
+            let count = length / (sizeof(Float32) + sizeof(Int32))
+            var result = [LipoVoltage]()
+            for index in 1...count {
+                let arrayIndex = index - 1
+                var lipo:Int32 = 0
+                var voltage:Float32 = 0
+                data.getBytes(&lipo, range: NSRange.init(location: arrayIndex * (sizeof(Int32) + sizeof(Float32)), length: sizeof(Int32)))
+                data.getBytes(&voltage, range: NSRange.init(location: arrayIndex * (sizeof(Int32) + sizeof(Float32)) + sizeof(Int32), length: sizeof(Int32)))
+                let lipoVoltage = LipoVoltage(lipo: Int(lipo), voltage: voltage)
+                result.append(lipoVoltage)
+            }
+            handler(voltages: result)
+        }
     }
 }

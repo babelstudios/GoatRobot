@@ -18,6 +18,8 @@ class ViewController: UIViewController {
     
     var goatService: GoatService!
     @IBOutlet weak var temperatureLabel: UILabel!
+    @IBOutlet weak var lipoOneLabel: UILabel!
+    @IBOutlet weak var lipoTwoLabel: UILabel!
     @IBOutlet weak var leftThrottleView: UIView!
     @IBOutlet weak var rightThrottleView: UIView!
     @IBOutlet weak var leftThrottleVerticalConstraint: NSLayoutConstraint!
@@ -36,6 +38,12 @@ class ViewController: UIViewController {
                 self.goatService = service
                 self.goatService.temperatureMonitorHandler = { temperature in
                     self.temperatureLabel.text = String.localizedStringWithFormat("%.1f %@", temperature, "°C")
+                }
+                self.goatService.lipoVoltageMonitorHandler = { voltages in
+                    let voltageOne = voltages[0]
+                    self.lipoOneLabel.text = "Lipo #\(voltageOne.lipo): \(String.localizedStringWithFormat("%.1f %@", voltageOne.voltage, "V"))"
+                    let voltageTwo = voltages[1]
+                    self.lipoTwoLabel.text = "Lipo #\(voltageTwo.lipo): \(String.localizedStringWithFormat("%.1f %@", voltageTwo.voltage, "V"))"
                 }
             case .Failure(let error):
                 self.goatService = nil

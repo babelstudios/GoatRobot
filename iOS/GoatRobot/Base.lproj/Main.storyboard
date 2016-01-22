@@ -152,10 +152,24 @@
                                 <color key="textColor" red="0.0" green="1" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Lipo #1 -- V" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="UM4-w3-lRg">
+                                <rect key="frame" x="-42" y="-21" width="42" height="21"/>
+                                <fontDescription key="fontDescription" name="CourierNewPSMT" family="Courier New" pointSize="20"/>
+                                <color key="textColor" red="0.0" green="1" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Lipo #2 -- V" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="bXN-ZQ-7ut">
+                                <rect key="frame" x="-42" y="-21" width="42" height="21"/>
+                                <fontDescription key="fontDescription" name="CourierNewPSMT" family="Courier New" pointSize="20"/>
+                                <color key="textColor" red="0.0" green="1" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
                             <constraint firstItem="arn-uI-l1I" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" id="5Ng-RV-zsn"/>
+                            <constraint firstItem="bXN-ZQ-7ut" firstAttribute="top" secondItem="UM4-w3-lRg" secondAttribute="bottom" constant="8" id="7bT-f0-K5V"/>
+                            <constraint firstItem="bXN-ZQ-7ut" firstAttribute="centerX" secondItem="UM4-w3-lRg" secondAttribute="centerX" id="A9u-lX-8YE"/>
                             <constraint firstAttribute="trailingMargin" secondItem="mEw-hk-sfM" secondAttribute="trailing" id="Bhh-et-ruI"/>
                             <constraint firstItem="mEw-hk-sfM" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" constant="8" id="FnV-DJ-gJ7">
                                 <variation key="heightClass=compact" constant="0.0"/>
@@ -170,8 +184,12 @@
                             <constraint firstItem="pXo-Gr-gqa" firstAttribute="top" secondItem="arn-uI-l1I" secondAttribute="bottom" constant="0.5" id="VQc-e4-tX4">
                                 <variation key="heightClass=compact-widthClass=regular" constant="10"/>
                             </constraint>
+                            <constraint firstItem="UM4-w3-lRg" firstAttribute="top" secondItem="pXo-Gr-gqa" secondAttribute="bottom" constant="1.5" id="Wmc-fY-iTy">
+                                <variation key="heightClass=compact-widthClass=regular" constant="8"/>
+                            </constraint>
                             <constraint firstAttribute="leadingMargin" secondItem="jL1-RP-Ozy" secondAttribute="leading" id="doE-D8-Mbu"/>
                             <constraint firstItem="pXo-Gr-gqa" firstAttribute="centerX" secondItem="arn-uI-l1I" secondAttribute="centerX" id="erg-Xh-2If"/>
+                            <constraint firstItem="UM4-w3-lRg" firstAttribute="centerX" secondItem="pXo-Gr-gqa" secondAttribute="centerX" id="fUo-ib-Nzu"/>
                             <constraint firstItem="wfy-db-euE" firstAttribute="top" secondItem="jL1-RP-Ozy" secondAttribute="bottom" constant="20" id="ieu-62-F3q">
                                 <variation key="heightClass=compact" constant="0.0"/>
                             </constraint>
@@ -182,6 +200,8 @@
                                 <exclude reference="mEw-hk-sfM"/>
                                 <exclude reference="arn-uI-l1I"/>
                                 <exclude reference="pXo-Gr-gqa"/>
+                                <exclude reference="UM4-w3-lRg"/>
+                                <exclude reference="bXN-ZQ-7ut"/>
                             </mask>
                             <mask key="constraints">
                                 <exclude reference="JPA-C8-ruf"/>
@@ -192,6 +212,10 @@
                                 <exclude reference="ieu-62-F3q"/>
                                 <exclude reference="VQc-e4-tX4"/>
                                 <exclude reference="erg-Xh-2If"/>
+                                <exclude reference="Wmc-fY-iTy"/>
+                                <exclude reference="fUo-ib-Nzu"/>
+                                <exclude reference="7bT-f0-K5V"/>
+                                <exclude reference="A9u-lX-8YE"/>
                                 <exclude reference="Bhh-et-ruI"/>
                                 <exclude reference="FnV-DJ-gJ7"/>
                             </mask>
@@ -216,16 +240,24 @@
                         <variation key="heightClass=compact-widthClass=regular">
                             <mask key="subviews">
                                 <include reference="pXo-Gr-gqa"/>
+                                <include reference="UM4-w3-lRg"/>
+                                <include reference="bXN-ZQ-7ut"/>
                             </mask>
                             <mask key="constraints">
                                 <include reference="VQc-e4-tX4"/>
                                 <include reference="erg-Xh-2If"/>
+                                <include reference="Wmc-fY-iTy"/>
+                                <include reference="fUo-ib-Nzu"/>
+                                <include reference="7bT-f0-K5V"/>
+                                <include reference="A9u-lX-8YE"/>
                             </mask>
                         </variation>
                     </view>
                     <connections>
                         <outlet property="leftThrottleVerticalConstraint" destination="gGf-Rl-aSa" id="QK4-k0-hbA"/>
                         <outlet property="leftThrottleView" destination="gKC-2U-qye" id="kwX-KQ-Fbi"/>
+                        <outlet property="lipoOneLabel" destination="UM4-w3-lRg" id="qsY-Bc-daM"/>
+                        <outlet property="lipoTwoLabel" destination="bXN-ZQ-7ut" id="R83-QN-PHc"/>
                         <outlet property="rightThrottleVerticalConstraint" destination="DnI-WE-cOz" id="QLh-Kh-NFh"/>
                         <outlet property="rightThrottleView" destination="KhA-Od-nAv" id="S15-Dc-8mc"/>
                         <outlet property="temperatureLabel" destination="pXo-Gr-gqa" id="TTX-3V-pwo"/>
