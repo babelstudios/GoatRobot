@@ -74,6 +74,7 @@ LSM9DS0.prototype.calculateGyroBias = function(counter, bias, callback) {
 	    self.gyroBias[0] = bias[0] / (counter - 5)
 	    self.gyroBias[1] = bias[1] / (counter - 5)
 	    self.gyroBias[2] = bias[2] / (counter - 5)
+	    console.log('Done calculating gyro bias.')
 	    callback()
 	    return
 	}
@@ -82,14 +83,17 @@ LSM9DS0.prototype.calculateGyroBias = function(counter, bias, callback) {
 }
 
 LSM9DS0.prototype.calibrateMag = function(time, callback) {
-    var calibration = this.configuration.read('magCalibration')
-    this.magCalibration = {xMax: 0, xMin: 0, yMax: 0, yMin: 0, zMax: 0, zMin: 0}
-    this.calibrateMagLoop(time, calibration, callback)
+    var self = this
+    this.readRawMag(function(data) {
+	var calibration = {xMax: data[0], xMin: data[0], yMax: data[1], yMin: data[1], zMax: data[2], zMin: data[2]}
+	self.calibrateMagLoop(time, calibration, callback)	
+    })
 }
 
 LSM9DS0.prototype.calibrateMagLoop = function(time, calibration, callback) {
     var self = this
-    this.readMag(function(data) {
+    this.readRawMag(function(data) {
+	console.log(data)
 	time -= 100.0
 	if (data[0] > calibration.xMax) {
 	    calibration.xMax = data[0]
@@ -149,6 +153,16 @@ LSM9DS0.prototype.readMag = function(callback) {
 	var x = data.readInt16LE(0) - (cal.xMin + cal.xMax) / 2 - cal.xMin / (cal.xMax - cal.xMin) * 2 - 1
 	var y = data.readInt16LE(2) - (cal.yMin + cal.yMax) / 2 - cal.yMin / (cal.yMax - cal.yMin) * 2 - 1
 	var z = data.readInt16LE(4) - (cal.zMin + cal.zMax) / 2 - cal.zMin / (cal.zMax - cal.zMin) * 2 - 1
+	callback([x, y, z]);
+    });
+};
+
+LSM9DS0.prototype.readRawMag = function(callback) {
+    var self = this
+    this.xm.readBytes(0x80 | LSM9DS0.OUT_X_L_M, 6, function(error, data) {
+	var x = data.readInt16LE(0)
+	var y = data.readInt16LE(2)
+	var z = data.readInt16LE(4)
 	callback([x, y, z]);
     });
 };

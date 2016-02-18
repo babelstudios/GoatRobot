@@ -4,8 +4,12 @@ var sylvester = require('sylvester'),
     Matrix = sylvester.Matrix,
     Vector = sylvester.Vector;
 
+var ACC_WEIGHT = 0.02
+var MAG_WEIGHT = 0.02
+
 function DCMFilter(dataProvider) {
     var self = this
+    this.stabilizing = 20
     this.dataProvider = dataProvider
     this.dcmEst = Matrix.create([[1,0,0],
 				 [0,1,0],
@@ -36,8 +40,14 @@ DCMFilter.prototype.updateFilter = function(data, callback) {
 
     // Gyro
     var wG = Vector.create(data.gyro).multiply(-1.0)
-    var accWeight = 0.02
-    var magWeight = 0.02
+    var accWeight = ACC_WEIGHT
+    var magWeight = MAG_WEIGHT
+
+    if(this.stabilizing > 0) {
+	this.stabilizing--
+	var accWeight = 1000
+	var magWeight = 1000
+    }
 
     // Create rotation vector
     var w = wG.add(wA.multiply(accWeight)).add(wM.multiply(magWeight))

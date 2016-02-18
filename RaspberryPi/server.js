@@ -2,8 +2,11 @@ var util = require('util')
 
 var LSM9DS0 = require('./lsm9ds0')
 var lsm9ds0 = new LSM9DS0.LSM9DS0(100.0);
+lsm9ds0.start()
+//console.log('Calculating gyro bias...')
+
 /*
-lsm9ds0.calibrateMag(20*1000, function() {
+lsm9ds0.calibrateMag(40*1000, function() {
     console.log('Calibration done.')
     lsm9ds0.start()
     lsm9ds0.on('data', function(data) {
@@ -15,9 +18,8 @@ lsm9ds0.calibrateMag(20*1000, function() {
 var DCMFilter = require('./dcm-filter')
 var dcmFilter = new DCMFilter.DCMFilter(lsm9ds0)
 dcmFilter.on('data', function(data) {
-    console.log("roll: " + data.roll.toFixed(2) + ", pitch: " + data.pitch.toFixed(2) + ", yaw: " + data.yaw.toFixed(2))
+    console.log("roll: " + (data.roll * 180 / Math.PI).toFixed(2) + ", pitch: " + (data.pitch * 180 / Math.PI).toFixed(2) + ", yaw: " + (data.yaw * 180 / Math.PI).toFixed(2))
 });
-
 
 var bleno = require('bleno')
 var robot = require('./robot');
@@ -48,7 +50,7 @@ bleno.on('advertisingStart', function(err) {
     }
 });
 
-
+/*
 var Bancroft = require('bancroft');
 var bancroft = new Bancroft();
 
@@ -65,16 +67,5 @@ bancroft.on('location', function (location) {
 bancroft.on('disconnect', function (err) {
     console.log('disconnected');
 });
-
-
-var robotMonitor = require('./robot-monitor')
-var monitor = new robotMonitor.RobotMonitor([1, 2])
-
-monitor.on('temp', function(temp) {
-    console.log(temp.toFixed(1) + " C")
-})
-
-monitor.on('volt', function(channel, volts) {
-    console.log(volts.toFixed(1) + " volts on channel " + channel);
-})
+*/
 
