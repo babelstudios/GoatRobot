@@ -15,6 +15,7 @@ function RobotVoltageCharacteristic(robot) {
 	  })
       ],
       onSubscribe : function(maxSize, callback) {
+	  /*
 	  this.robot.on('voltage', function(volts) {
 	      var buffer = new Buffer(Array(4 * 2 * volts.length))
 	      for (i = 0; i < volts.length; i++) {
@@ -23,6 +24,7 @@ function RobotVoltageCharacteristic(robot) {
 	      }
 	      callback(buffer)
 	  })
+*/
       }
   });
 }
