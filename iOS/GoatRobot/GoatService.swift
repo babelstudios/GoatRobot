@@ -14,31 +14,30 @@ enum Motor {
     case Right
 }
 
-struct LipoVoltage {
-    let lipo:Int
-    let voltage:Float
+struct SystemStatus {
+    let voltage: Float
+    let amps: Float
+    let totalAmps: Float
+    let temp: Float
 }
 
 class GoatService: NSObject, CBPeripheralDelegate {
     
     typealias TemperatureMonitorHandler = ((temperature: Float) -> Void)
-    var temperatureMonitorHandler: TemperatureMonitorHandler?
 
-    typealias LipoVoltageMonitorHandler = ((voltages: [LipoVoltage]) -> Void)
-    var lipoVoltageMonitorHandler: LipoVoltageMonitorHandler?
+    typealias SystemsMonitorHandler = ((status: SystemStatus) -> Void)
+    var systemsMonitorHandler: SystemsMonitorHandler?
     
     let peripheral: CBPeripheral
 
     static let uuid = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6810")
     let leftMotorUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6811")
     let rightMotorUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6812")
-    let temperatureUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6813")
-    let lipoVoltageUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6814")
+    let systemsMonitorUUID = CBUUID.init(string: "31491EEC-D9BB-41BD-8D63-2282ABAE6813")
     
     var leftMotor: CBCharacteristic?
     var rightMotor: CBCharacteristic?
-    var temperature: CBCharacteristic?
-    var lipoVoltage: CBCharacteristic?
+    var system: CBCharacteristic?
     
     var leftMotorTS = NSDate().timeIntervalSince1970
     var rightMotorTS = NSDate().timeIntervalSince1970
@@ -52,11 +51,12 @@ class GoatService: NSObject, CBPeripheralDelegate {
     
     func peripheral(peripheral: CBPeripheral, didDiscoverServices error: NSError?) {
         for service in peripheral.services! {
-            peripheral.discoverCharacteristics([leftMotorUUID, rightMotorUUID, temperatureUUID, lipoVoltageUUID], forService: service)
+            peripheral.discoverCharacteristics([leftMotorUUID, rightMotorUUID, systemsMonitorUUID], forService: service)
         }
     }
     
-    func setThrottle(throttle: Int, motor: Motor) {
+    func setThrottle(throttle: Float, motor: Motor) {
+        print("\(throttle)")
         guard let leftMotor = leftMotor else { return }
         guard let rightMotor = rightMotor else { return }
         
@@ -73,24 +73,23 @@ class GoatService: NSObject, CBPeripheralDelegate {
             motorCharacteristic = rightMotor
         }
         
-        var score = Int16(throttle)
-        let data = NSData(bytes: &score, length: sizeof(Int16))
+        var scaledThrottle = Int16(throttle * 100)
+        let data = NSData(bytes: &scaledThrottle, length: sizeof(Int16))
         print("Send throttle: \(throttle), data: \(data)")
         peripheral.writeValue(data, forCharacteristic: motorCharacteristic, type: .WithResponse)
     }
     
     func peripheral(peripheral: CBPeripheral, didDiscoverCharacteristicsForService service: CBService, error: NSError?) {
         for characteristic in service.characteristics! {
+            print("discovered characteristic: \(characteristic.UUID)")
+            
             if characteristic.UUID == leftMotorUUID {
                 leftMotor = characteristic
             } else if characteristic.UUID == rightMotorUUID {
                 rightMotor = characteristic
-            } else if characteristic.UUID == temperatureUUID {
-                temperature = characteristic
-                peripheral.setNotifyValue(true, forCharacteristic: temperature!)
-            } else if characteristic.UUID == lipoVoltageUUID {
-                lipoVoltage = characteristic
-                peripheral.setNotifyValue(true, forCharacteristic: lipoVoltage!)
+            } else if characteristic.UUID == systemsMonitorUUID {
+                system = characteristic
+                peripheral.setNotifyValue(true, forCharacteristic: system!)
             }
         }
     }
@@ -99,27 +98,18 @@ class GoatService: NSObject, CBPeripheralDelegate {
         
         guard let data = characteristic.value else { return }
 
-        if let temperature = temperature where temperature == characteristic {
-            guard let handler = temperatureMonitorHandler else { return }
-            var temp:Float32 = 0
-            data.getBytes(&temp, length: sizeof(Float32))
-            handler(temperature: temp)
-        } else if let lipoVoltage = lipoVoltage where lipoVoltage == characteristic {
-            guard let handler = lipoVoltageMonitorHandler else { return }
-            
-            let length = data.length
-            let count = length / (sizeof(Float32) + sizeof(Int32))
-            var result = [LipoVoltage]()
-            for index in 1...count {
-                let arrayIndex = index - 1
-                var lipo:Int32 = 0
-                var voltage:Float32 = 0
-                data.getBytes(&lipo, range: NSRange.init(location: arrayIndex * (sizeof(Int32) + sizeof(Float32)), length: sizeof(Int32)))
-                data.getBytes(&voltage, range: NSRange.init(location: arrayIndex * (sizeof(Int32) + sizeof(Float32)) + sizeof(Int32), length: sizeof(Int32)))
-                let lipoVoltage = LipoVoltage(lipo: Int(lipo), voltage: voltage)
-                result.append(lipoVoltage)
+        print("\(data)")
+        if let system = system where system == characteristic {
+            guard let handler = systemsMonitorHandler else { return }
+            var result = [Float32]()
+            for index in 1...4 {
+                var value:Float32 = 0
+                print("index: \(index - 1)")
+                data.getBytes(&value, range: NSRange.init(location: (index - 1) * sizeof(Float32), length: sizeof(Float32)))
+                result.append(value)
             }
-            handler(voltages: result)
+            let status = SystemStatus(voltage: result[0], amps: result[1], totalAmps: result[2], temp: result[3])
+            handler(status: status)
         }
     }
 }
