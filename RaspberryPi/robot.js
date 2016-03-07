@@ -6,8 +6,8 @@ var robotMonitor = require('./robot-monitor')
 function Robot() {
     var self = this
     // Motors
-    this.leftMotorStream = servoblaster.createWriteStream(0)
-    this.rightMotorStream = servoblaster.createWriteStream(1)
+    this.leftMotorStream = servoblaster.createWriteStream(0) // gpio 4
+    this.rightMotorStream = servoblaster.createWriteStream(1) // gpio 17
     // Temperature and lipo monitoring
     this.monitor = new robotMonitor.RobotMonitor([1, 2])
     this.monitor.on('temperature', function(temp) {
