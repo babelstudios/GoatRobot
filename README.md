@@ -9,3 +9,5 @@ and a GPS to figure out where on the lawn it is. There's also some onboard energ
 nice pulsing RGB led that hopefully will show the status of the robot in the future.
 
 People wanting to do sensor fusion on a Raspberry Pi using node.js might find this project interesting.
+
+![Alt text](images/robot-prototype.jpg?raw=true "Title")
